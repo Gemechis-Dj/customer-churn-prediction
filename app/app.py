@@ -1,78 +1,76 @@
 from pathlib import Path
-import joblib
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import joblib
 
+# Project root and model path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODEL_PATH = PROJECT_ROOT / "models" / "churn_prediction_pipeline.pkl"
 
-@st.cache_resource
-def load_model():
-    if not MODEL_PATH.exists():
-        raise FileNotFoundError(
-            f"Model not found: {MODEL_PATH}. Run src/train_model.py first."
-        )
-    return joblib.load(MODEL_PATH)
-
+# Page settings
 st.set_page_config(page_title="Customer Churn Prediction", layout="centered")
+
+# Load trained model
+model = joblib.load(MODEL_PATH)
+
+# App title
 st.title("Customer Churn Prediction App")
-st.caption("Real-world retention scoring demo using the IBM Telco Customer Churn Dataset")
+st.write("Enter customer information to predict churn risk.")
 
-model = load_model()
+# User inputs
+gender = st.selectbox("Gender", ["Female", "Male"])
+SeniorCitizen = st.selectbox("Senior Citizen", [0, 1])
+Partner = st.selectbox("Partner", ["Yes", "No"])
+Dependents = st.selectbox("Dependents", ["Yes", "No"])
+tenure = st.slider("Tenure (months)", 0, 72, 12)
+PhoneService = st.selectbox("Phone Service", ["Yes", "No"])
+MultipleLines = st.selectbox("Multiple Lines", ["No", "Yes", "No phone service"])
+InternetService = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
+OnlineSecurity = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
+OnlineBackup = st.selectbox("Online Backup", ["Yes", "No", "No internet service"])
+DeviceProtection = st.selectbox("Device Protection", ["Yes", "No", "No internet service"])
+TechSupport = st.selectbox("Tech Support", ["Yes", "No", "No internet service"])
+StreamingTV = st.selectbox("Streaming TV", ["Yes", "No", "No internet service"])
+StreamingMovies = st.selectbox("Streaming Movies", ["Yes", "No", "No internet service"])
+Contract = st.selectbox("Contract", ["Month-to-month", "One year", "Two year"])
+PaperlessBilling = st.selectbox("Paperless Billing", ["Yes", "No"])
+PaymentMethod = st.selectbox(
+    "Payment Method",
+    [
+        "Electronic check",
+        "Mailed check",
+        "Bank transfer (automatic)",
+        "Credit card (automatic)"
+    ]
+)
+MonthlyCharges = st.number_input("Monthly Charges", min_value=0.0, max_value=200.0, value=70.0)
+TotalCharges = st.number_input("Total Charges", min_value=0.0, max_value=10000.0, value=1000.0)
 
-with st.form("prediction_form"):
-    gender = st.selectbox("Gender", ["Female", "Male"])
-    senior_citizen = st.selectbox("Senior Citizen", [0, 1])
-    partner = st.selectbox("Partner", ["Yes", "No"])
-    dependents = st.selectbox("Dependents", ["Yes", "No"])
-    tenure = st.slider("Tenure (months)", 0, 72, 12)
-    phone_service = st.selectbox("Phone Service", ["Yes", "No"])
-    multiple_lines = st.selectbox("Multiple Lines", ["No", "Yes", "No phone service"])
-    internet_service = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
-    online_security = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
-    online_backup = st.selectbox("Online Backup", ["Yes", "No", "No internet service"])
-    device_protection = st.selectbox("Device Protection", ["Yes", "No", "No internet service"])
-    tech_support = st.selectbox("Tech Support", ["Yes", "No", "No internet service"])
-    streaming_tv = st.selectbox("Streaming TV", ["Yes", "No", "No internet service"])
-    streaming_movies = st.selectbox("Streaming Movies", ["Yes", "No", "No internet service"])
-    contract = st.selectbox("Contract", ["Month-to-month", "One year", "Two year"])
-    paperless_billing = st.selectbox("Paperless Billing", ["Yes", "No"])
-    payment_method = st.selectbox(
-        "Payment Method",
-        [
-            "Electronic check",
-            "Mailed check",
-            "Bank transfer (automatic)",
-            "Credit card (automatic)",
-        ],
-    )
-    monthly_charges = st.number_input("Monthly Charges", min_value=0.0, max_value=200.0, value=70.0)
-    total_charges = st.number_input("Total Charges", min_value=0.0, max_value=10000.0, value=1000.0)
-    submitted = st.form_submit_button("Predict Churn")
+# Convert inputs into DataFrame
+input_df = pd.DataFrame([{
+    "gender": gender,
+    "SeniorCitizen": SeniorCitizen,
+    "Partner": Partner,
+    "Dependents": Dependents,
+    "tenure": tenure,
+    "PhoneService": PhoneService,
+    "MultipleLines": MultipleLines,
+    "InternetService": InternetService,
+    "OnlineSecurity": OnlineSecurity,
+    "OnlineBackup": OnlineBackup,
+    "DeviceProtection": DeviceProtection,
+    "TechSupport": TechSupport,
+    "StreamingTV": StreamingTV,
+    "StreamingMovies": StreamingMovies,
+    "Contract": Contract,
+    "PaperlessBilling": PaperlessBilling,
+    "PaymentMethod": PaymentMethod,
+    "MonthlyCharges": MonthlyCharges,
+    "TotalCharges": TotalCharges
+}])
 
-if submitted:
-    input_df = pd.DataFrame([{
-        "gender": gender,
-        "SeniorCitizen": senior_citizen,
-        "Partner": partner,
-        "Dependents": dependents,
-        "tenure": tenure,
-        "PhoneService": phone_service,
-        "MultipleLines": multiple_lines,
-        "InternetService": internet_service,
-        "OnlineSecurity": online_security,
-        "OnlineBackup": online_backup,
-        "DeviceProtection": device_protection,
-        "TechSupport": tech_support,
-        "StreamingTV": streaming_tv,
-        "StreamingMovies": streaming_movies,
-        "Contract": contract,
-        "PaperlessBilling": paperless_billing,
-        "PaymentMethod": payment_method,
-        "MonthlyCharges": monthly_charges,
-        "TotalCharges": total_charges,
-    }])
-
+# Prediction
+if st.button("Predict Churn"):
     prediction = model.predict(input_df)[0]
     probability = model.predict_proba(input_df)[0][1]
 
